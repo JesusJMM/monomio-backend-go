@@ -1,0 +1,9 @@
+version: "1"
+# project:
+#     id: ""
+packages: 
+  - name: "postgres"
+    path: "postgres"
+    queries: "./sql/query/"
+    schema: "./sql/schema/"
+    engine: "postgresql"
