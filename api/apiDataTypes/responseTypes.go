@@ -31,3 +31,7 @@ type ResponseCompletePost struct {
 	AuthorName   string `json:"authorName"`
 	AuthorImgURL string `json:"authorImg"`
 }
+
+type ResponseCreatePost struct {
+  ID int `json:"id"`
+}
