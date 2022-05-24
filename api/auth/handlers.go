@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -37,6 +38,10 @@ func (a *AuthHandler) Signup() gin.HandlerFunc{
     }
     newUser, err := a.DB.CreateUser(context.Background(), user)
     if err != nil {
+      if strings.Contains(err.Error(), "duplicate key value violates unique constraint"){
+        ctx.String(http.StatusConflict, "User name already taken")
+        return
+      }
       log.Println(err)
       ctx.String(http.StatusInternalServerError, "Internal Server Error, error: %w", err)
       return
