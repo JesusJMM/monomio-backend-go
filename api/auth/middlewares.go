@@ -26,3 +26,15 @@ func AuthRequired(c *gin.Context){
   }
   c.Set("tokenClaims", claims)
 }
+
+func GetTokenClaimsFromContext(c *gin.Context) (*TokenClaims, error) {
+	v, exist := c.Get("tokenClaims")
+	if !exist {
+		return nil, fmt.Errorf("Claims are not set")
+	}
+	claims, ok := v.(*TokenClaims)
+	if ok {
+		return claims, nil
+	}
+	return nil, fmt.Errorf("Invalid claims")
+}
