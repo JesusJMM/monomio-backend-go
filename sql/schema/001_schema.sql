@@ -1,6 +1,6 @@
 CREATE TABLE users (
   id    BIGSERIAL NOT NULL,
-  name  VARCHAR(255) NOT NULL,
+  name  VARCHAR(255) NOT NULL UNIQUE,
   password text NOT NULL,
   img_url text
 );

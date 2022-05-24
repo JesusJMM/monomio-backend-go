@@ -68,21 +68,20 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, img_url
+SELECT id, name, password, img_url
 FROM users
 WHERE id = $1
 `
 
-type GetUserRow struct {
-	ID     int64
-	Name   string
-	ImgUrl sql.NullString
-}
-
-func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
+func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i GetUserRow
-	err := row.Scan(&i.ID, &i.Name, &i.ImgUrl)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Password,
+		&i.ImgUrl,
+	)
 	return i, err
 }
 
@@ -108,6 +107,25 @@ func (q *Queries) GetUserAndBio(ctx context.Context) (GetUserAndBioRow, error) {
 		&i.Name,
 		&i.ImgUrl,
 		&i.Bio,
+	)
+	return i, err
+}
+
+const getUserByName = `-- name: GetUserByName :one
+SELECT id, name, password, img_url
+FROM users
+WHERE name = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByName, name)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Password,
+		&i.ImgUrl,
 	)
 	return i, err
 }

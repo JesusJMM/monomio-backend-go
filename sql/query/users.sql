@@ -16,9 +16,15 @@ RETURNING *;
 DELETE FROM users WHERE id = $1;
 
 -- name: GetUser :one
-SELECT id, name, img_url
+SELECT *
 FROM users
 WHERE id = $1;
+
+-- name: GetUserByName :one
+SELECT *
+FROM users
+WHERE name = $1
+LIMIT 1;
 
 -- name: CreateBio :one
 INSERT INTO bios (
