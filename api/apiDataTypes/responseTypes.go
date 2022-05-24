@@ -1,4 +1,4 @@
-package api
+package apiDT
 
 type User struct {
 	ID     int    `json:"id"`

@@ -8,23 +8,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/JesusJMM/monomio/api"
+	"github.com/JesusJMM/monomio/api/apiDataTypes"
 	"github.com/JesusJMM/monomio/postgres"
 )
 
 type AuthHandler struct {
-  db postgres.Queries
+  DB postgres.Queries
 }
 
 func (a *AuthHandler) Signup() gin.HandlerFunc{
   return func(ctx *gin.Context) {
-    var payload api.PayloadSignup
+    var payload apiDT.PayloadSignup
     if err := ctx.BindJSON(&payload); err != nil {
+      log.Println(err)
       ctx.String(http.StatusBadRequest, "error: %w", err)
       return
     }
     hashedPassword, err := HashPassword(payload.Password)
     if err != nil {
+      log.Println(err)
       ctx.String(http.StatusInternalServerError, "Internal Server Error")
       return
     }
@@ -33,8 +35,9 @@ func (a *AuthHandler) Signup() gin.HandlerFunc{
       Password: hashedPassword,
       ImgUrl: sql.NullString{ String: payload.ImgURL, Valid: payload.ImgURL != ""},
     }
-    newUser, err := a.db.CreateUser(context.Background(), user)
+    newUser, err := a.DB.CreateUser(context.Background(), user)
     if err != nil {
+      log.Println(err)
       ctx.String(http.StatusInternalServerError, "Internal Server Error, error: %w", err)
       return
     }
@@ -47,22 +50,22 @@ func (a *AuthHandler) Signup() gin.HandlerFunc{
     }
   
     ctx.Header("Authorization", token)
-    responseUser := api.User{
+    responseUser := apiDT.User{
       ID: int(newUser.ID),
       Name: newUser.Name,
       ImgURL: newUser.ImgUrl.String,
     }
-    ctx.JSON(http.StatusCreated, api.ResponseSignup{User: responseUser})
+    ctx.JSON(http.StatusCreated, apiDT.ResponseSignup{User: responseUser})
   }
 }
 
 func (a *AuthHandler) Login() gin.HandlerFunc{
   return func(ctx *gin.Context) {
-    var payload api.PayloadLogin
+    var payload apiDT.PayloadLogin
     if err := ctx.BindJSON(&payload); err != nil {
       ctx.String(http.StatusBadRequest, "Bad request, error: %w", err)
     }
-    dbUser, err := a.db.GetUserByName(context.Background(), payload.Name)
+    dbUser, err := a.DB.GetUserByName(context.Background(), payload.Name)
     if err != nil{
       if err == sql.ErrNoRows{
         ctx.String(http.StatusNotFound, "User does not exits")
@@ -82,12 +85,12 @@ func (a *AuthHandler) Login() gin.HandlerFunc{
       return
     }
     ctx.Header("Authorization", token)
-    responseUser := api.User{
+    responseUser := apiDT.User{
       ID: int(dbUser.ID),
       Name: dbUser.Name,
       ImgURL: dbUser.ImgUrl.String,
     }
-    ctx.JSON(http.StatusOK, api.ResponseLogin{User: responseUser})
+    ctx.JSON(http.StatusOK, apiDT.ResponseLogin{User: responseUser})
   }
 }
 
