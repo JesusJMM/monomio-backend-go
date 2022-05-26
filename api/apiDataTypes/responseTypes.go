@@ -1,5 +1,7 @@
 package apiDT
 
+import "time"
+
 type User struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`
@@ -17,7 +19,7 @@ type ResponseShortPost struct {
 	ID           int    `json:"id"`
 	Title        string `json:"title"`
 	Description  string `json:"desc"`
-	CreatedAt    string `json:"createdAt"`
+	CreatedAt    time.Time `json:"createdAt"`
 	AuthorName   string `json:"authorName"`
 	AuthorImgURL string `json:"authorImg"`
 }
@@ -27,11 +29,11 @@ type ResponseCompletePost struct {
 	Title        string `json:"title"`
 	Content      string `json:"content"`
 	Description  string `json:"desc"`
-	CreatedAt    string `json:"createdAt"`
+	CreatedAt    time.Time `json:"createdAt"`
 	AuthorName   string `json:"authorName"`
 	AuthorImgURL string `json:"authorImg"`
 }
 
 type ResponseCreatePost struct {
-  ID int `json:"id"`
+	ID int `json:"id"`
 }
