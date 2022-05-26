@@ -14,15 +14,15 @@ import (
 )
 
 type PostsHandler struct {
-	db *postgres.Queries
+	db postgres.Queries
 }
 
-func New(db *postgres.Queries) PostsHandler {
+func New(db postgres.Queries) PostsHandler {
 	return PostsHandler{
 		db: db,
 	}
 }
-      
+
 func (h PostsHandler) Create() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		tokenClaims, _ := auth.GetTokenClaimsFromContext(ctx)
@@ -105,93 +105,123 @@ func (h PostsHandler) Update() gin.HandlerFunc {
 }
 
 func (h *PostsHandler) Delete() gin.HandlerFunc {
-  return func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 		tokenClaims, _ := auth.GetTokenClaimsFromContext(ctx)
-    id, err := strconv.Atoi(ctx.Param("id"))
-    if err != nil {
-      ctx.String(http.StatusBadRequest, "'id' url param must be a number")
-    }
-    h.db.DeletePost(context.Background(), postgres.DeletePostParams{
-      ID: int64(id),
-      UserID: int64(tokenClaims.UID),
-    })
-  }
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.String(http.StatusBadRequest, "'id' url param must be a number")
+		}
+		h.db.DeletePost(context.Background(), postgres.DeletePostParams{
+			ID:     int64(id),
+			UserID: int64(tokenClaims.UID),
+		})
+	}
 }
 
 func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
-  return func(ctx *gin.Context) {
-    posts, err := h.db.GetPostsWithAuthor(context.Background())
-    if err != nil {
-      ctx.String(http.StatusInternalServerError, "Internal Server Error")
-      return
-    }
-    var out []apiDT.ResponseShortPost
-    for _, p := range posts {
-      out = append(out, apiDT.ResponseShortPost{
-        ID: int(p.ID),
-        Title: p.Title,
-        Description: p.Description.String,
-        CreatedAt: p.CreateAt,
-        AuthorName: p.Authorname.String,
-        AuthorImgURL: p.Authorimgurl.String,
-      })
-    }
-    ctx.JSON(http.StatusOK, out)
-  }
+	return func(ctx *gin.Context) {
+		posts, err := h.db.GetPostsWithAuthor(context.Background())
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		var out []apiDT.ResponseShortPost
+		for _, p := range posts {
+			out = append(out, apiDT.ResponseShortPost{
+				ID:           int(p.ID),
+				Title:        p.Title,
+				Description:  p.Description.String,
+				CreatedAt:    p.CreateAt,
+				AuthorName:   p.Authorname.String,
+				AuthorImgURL: p.Authorimgurl.String,
+			})
+		}
+		ctx.JSON(http.StatusOK, out)
+	}
 }
 
 func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
-  return func(ctx *gin.Context) {
-    page, err := strconv.Atoi(ctx.Query("id")) 
-    if err != nil {
-      ctx.String(http.StatusBadRequest, "'id' url query param must be a number")      
-    }
-    posts, err := h.db.GetPostsWithAuthorPaginated(context.Background(), postgres.GetPostsWithAuthorPaginatedParams{
-      Limit: 10,
-      Offset: int32(10 * (page - 1)),
-    })
-    if err != nil {
-      ctx.String(http.StatusInternalServerError, "Internal Server Error")
-      return
-    }
-    var out []apiDT.ResponseShortPost
-    for _, p := range posts {
-      out = append(out, apiDT.ResponseShortPost{
-        ID: int(p.ID),
-        Title: p.Title,
-        Description: p.Description.String,
-        CreatedAt: p.CreateAt,
-        AuthorName: p.Authorname.String,
-        AuthorImgURL: p.Authorimgurl.String,
-      })
-    }
-    ctx.JSON(http.StatusOK, out)
-  }
+	return func(ctx *gin.Context) {
+		page, err := strconv.Atoi(ctx.Query("id"))
+		if err != nil {
+			ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
+		}
+		posts, err := h.db.GetPostsWithAuthorPaginated(context.Background(), postgres.GetPostsWithAuthorPaginatedParams{
+			Limit:  10,
+			Offset: int32(10 * (page - 1)),
+		})
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		var out []apiDT.ResponseShortPost
+		for _, p := range posts {
+			out = append(out, apiDT.ResponseShortPost{
+				ID:           int(p.ID),
+				Title:        p.Title,
+				Description:  p.Description.String,
+				CreatedAt:    p.CreateAt,
+				AuthorName:   p.Authorname.String,
+				AuthorImgURL: p.Authorimgurl.String,
+			})
+		}
+		ctx.JSON(http.StatusOK, out)
+	}
 }
 
-func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc{
-  return func(ctx *gin.Context) {
-        userName := ctx.Param("user")
-    postTitle := ctx.Param("title")
-    post, err := h.db.GetPostByAuthorAndTitle(context.Background(), postgres.GetPostByAuthorAndTitleParams{
-      Name: userName,
-      Title: postTitle,
-    })
+func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		userName := ctx.Param("user")
+		postTitle := ctx.Param("title")
+		post, err := h.db.GetPostByAuthorAndTitle(context.Background(), postgres.GetPostByAuthorAndTitleParams{
+			Name:  userName,
+			Title: postTitle,
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				ctx.String(http.StatusNotFound, "Not found")
+				return
+			}
+			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		out := apiDT.ResponseCompletePost{
+			ID:           int(post.ID),
+			Title:        post.Title,
+			Description:  post.Description.String,
+			Content:      post.Content.String,
+			CreatedAt:    post.CreateAt,
+			AuthorName:   post.Authorname.String,
+			AuthorImgURL: post.Authorimgurl.String,
+		}
+		ctx.JSON(http.StatusOK, out)
+	}
+}
+
+func (h *PostsHandler) PostByID() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+    id, err := strconv.Atoi(ctx.Param("id"))
+    if err != nil {
+      ctx.String(http.StatusBadRequest, "'id' url param must be a number")
+      return
+    }
+    post, err := h.db.GetPostWithAuthor(context.Background(), int64(id))
     if err != nil {
       if errors.Is(err, sql.ErrNoRows){
-        ctx.String(http.StatusNotFound, "Not found"); return
+        ctx.String(http.StatusNotFound, "Not found")
       }
-      ctx.String(http.StatusInternalServerError, "Internal Server Error"); return
+			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			return
     }
     out := apiDT.ResponseCompletePost{
-      ID: int(post.ID),
-      Title: post.Title,
-      Description: post.Description.String,
-      Content: post.Content.String,
-      CreatedAt: post.CreateAt,
-      AuthorName: post.Authorname.String,
-      AuthorImgURL: post.Authorimgurl.String,
+			ID:           int(post.ID),
+			Title:        post.Title,
+			Description:  post.Description.String,
+			Content:      post.Content.String,
+			CreatedAt:    post.CreateAt,
+			AuthorName:   post.Authorname.String,
+			AuthorImgURL: post.Authorimgurl.String,
     }
     ctx.JSON(http.StatusOK, out)
-  }
+	}
 }

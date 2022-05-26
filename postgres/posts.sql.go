@@ -109,6 +109,43 @@ func (q *Queries) GetPostByAuthorAndTitle(ctx context.Context, arg GetPostByAuth
 	return i, err
 }
 
+const getPostWithAuthor = `-- name: GetPostWithAuthor :one
+SELECT 
+  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content,
+  users.name AS authorName,
+  users.img_url AS authorImgURL
+FROM posts
+LEFT JOIN users ON users.id = posts.user_id
+WHERE posts.id = $1
+`
+
+type GetPostWithAuthorRow struct {
+	ID           int64
+	UserID       int64
+	CreateAt     time.Time
+	Title        string
+	Description  sql.NullString
+	Content      sql.NullString
+	Authorname   sql.NullString
+	Authorimgurl sql.NullString
+}
+
+func (q *Queries) GetPostWithAuthor(ctx context.Context, id int64) (GetPostWithAuthorRow, error) {
+	row := q.db.QueryRowContext(ctx, getPostWithAuthor, id)
+	var i GetPostWithAuthorRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreateAt,
+		&i.Title,
+		&i.Description,
+		&i.Content,
+		&i.Authorname,
+		&i.Authorimgurl,
+	)
+	return i, err
+}
+
 const getPosts = `-- name: GetPosts :many
 SELECT id, user_id, create_at, title, description, content FROM posts
 ORDER BY created_at

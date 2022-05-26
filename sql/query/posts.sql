@@ -21,6 +21,15 @@ RETURNING *;
 -- name: GetSinglePost :one
 SELECT * FROM posts WHERE id=$1 LIMIT 1;
 
+-- name: GetPostWithAuthor :one
+SELECT 
+  posts.*,
+  users.name AS authorName,
+  users.img_url AS authorImgURL
+FROM posts
+LEFT JOIN users ON users.id = posts.user_id
+WHERE posts.id = $1;
+
 -- name: GetSinglePostByAuthor :one
 SELECT 
   posts.*,
