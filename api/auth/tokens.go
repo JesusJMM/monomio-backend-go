@@ -13,10 +13,10 @@ type TokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-var SECRET_KEY string
+var SECRET_KEY []byte
 
-func init(){
-  SECRET_KEY = os.Getenv("TOKEN_SECRET_KEY")
+func init() {
+	SECRET_KEY = []byte(os.Getenv("TOKEN_SECRET_KEY"))
 }
 
 func SignToken(UID int) (string, error) {
@@ -28,21 +28,21 @@ func SignToken(UID int) (string, error) {
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-  token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-  ss, err := token.SigningString()
-  return ss, err
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	ss, err := token.SignedString(SECRET_KEY)
+	return ss, err
 }
 
-func ParseToken(tokenString string) (*jwt.Token, TokenClaims, error) {
-  token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
-    if t.Method != jwt.SigningMethodHS256 {
-      return nil, fmt.Errorf("Invalid siging method")
+func ParseToken(tokenString string) (*jwt.Token, *TokenClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(t *jwt.Token) (interface{}, error) {
+    if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+      return nil, fmt.Errorf("Unspected signing method: %v", t.Header["alg"])
     }
-    return SECRET_KEY, nil
-  })
-  if claims, ok := token.Claims.(*TokenClaims); ok && token.Valid {
-    return token, *claims, nil
-  }else{
-    return nil, TokenClaims{}, err
-  }
+		return SECRET_KEY, nil
+	})
+	if claims, ok := token.Claims.(*TokenClaims); ok && token.Valid {
+		return token, claims, nil
+	} else {
+		return nil, nil, err
+	}
 }

@@ -25,7 +25,7 @@ func New(db postgres.Queries) PostsHandler {
 
 func (h PostsHandler) Create() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		tokenClaims, _ := auth.GetTokenClaimsFromContext(ctx)
+		tokenClaims, err := auth.GetTokenClaimsFromContext(ctx)
 
 		var payload apiDT.PayloadCreatePost
 		if err := ctx.BindJSON(&payload); err != nil {
