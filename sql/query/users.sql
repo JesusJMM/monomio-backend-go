@@ -40,8 +40,15 @@ SET bio=$1
 WHERE id=$2
 RETURNING *;
 
--- name: GetUserAndBio :one
+-- name: GetUsersAndBio :many
 SELECT u.id, u.name, u.img_url, b.bio 
 FROM users u
 LEFT JOIN bios b
 ON b.user_id = u.id;
+
+-- name: GetUserAndBio :one
+SELECT u.id, u.name, u.img_url, b.bio
+FROM users u
+LEFT JOIN bios b
+ON b.user_id = u.id
+WHERE u.id = $1;

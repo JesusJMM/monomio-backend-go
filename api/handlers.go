@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/JesusJMM/monomio/api/auth"
 	"github.com/JesusJMM/monomio/api/posts"
+	"github.com/JesusJMM/monomio/api/users"
 	"github.com/JesusJMM/monomio/postgres"
 	"github.com/gin-gonic/gin"
 )
@@ -28,5 +29,11 @@ func NewHandler(db postgres.Queries) *gin.Engine {
     authorized.PUT("/posts/", postH.Update())
     authorized.DELETE("/posts/:id", postH.Delete())
   }
+  userH := users.New(db)
+  {
+    api.GET("/authors", userH.GetAuthors())
+    api.GET("/author/:name", userH.GetAuthor())
+  }
+
   return r
 }
