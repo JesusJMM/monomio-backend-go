@@ -100,7 +100,7 @@ func (h PostsHandler) Update() gin.HandlerFunc {
 			ctx.String(http.StatusInternalServerError, "Error creating resource : %w", err)
 			return
 		}
-		ctx.JSON(http.StatusCreated, apiDT.ResponseCreatePost{ID: int(newUser.ID)})
+		ctx.JSON(http.StatusOK, apiDT.ResponseCreatePost{ID: int(newUser.ID)})
 	}
 }
 
