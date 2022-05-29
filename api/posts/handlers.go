@@ -198,6 +198,46 @@ func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
 	}
 }
 
+func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
+  return func(c *gin.Context) {
+    userName := c.Param("name")
+    var page int = 1
+    if c.Query("page") != "" {
+      var err error
+      page, err = strconv.Atoi(c.Query("page"))
+      if err != nil {
+        c.String(http.StatusBadRequest, "'page' query param must be a number")
+        return
+      }
+    }
+    posts, err := h.db.GetPostsByAuthorPaginated(context.Background(), postgres.GetPostsByAuthorPaginatedParams{
+      Name: userName,
+      Limit: 10,
+      Offset: int32(10 * (page - 1)),
+    })
+    if err != nil {
+      if errors.Is(err, sql.ErrNoRows) {
+        c.String(http.StatusNotFound, "Not found")
+        return
+      }
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+      return
+    }
+		var out []apiDT.ResponseShortPost
+		for _, p := range posts {
+			out = append(out, apiDT.ResponseShortPost{
+				ID:           int(p.ID),
+				Title:        p.Title,
+				Description:  p.Description.String,
+				CreatedAt:    p.CreateAt,
+				AuthorName:   p.Authorname.String,
+				AuthorImgURL: p.Authorimgurl.String,
+			})
+		}
+    c.JSON(http.StatusOK, out)
+  }
+}
+
 func (h *PostsHandler) PostByID() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
     id, err := strconv.Atoi(ctx.Param("id"))
@@ -209,6 +249,7 @@ func (h *PostsHandler) PostByID() gin.HandlerFunc {
     if err != nil {
       if errors.Is(err, sql.ErrNoRows){
         ctx.String(http.StatusNotFound, "Not found")
+        return
       }
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
 			return
