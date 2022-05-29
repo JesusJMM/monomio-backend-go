@@ -2,17 +2,17 @@ package apiDT
 
 import "time"
 
-type User struct {
+type ResponseUser struct {
 	ID     int    `json:"id"`
 	Name   string `json:"name"`
 	ImgURL string `json:"imgUrl"`
 }
 
 type ResponseLogin struct {
-	User User `json:"user"`
+	User ResponseUser `json:"user"`
 }
 type ResponseSignup struct {
-	User User `json:"user"`
+	User ResponseUser `json:"user"`
 }
 
 type ResponseShortPost struct {

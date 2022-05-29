@@ -55,7 +55,7 @@ func (a *AuthHandler) Signup() gin.HandlerFunc{
     }
   
     ctx.Header("Authorization", token)
-    responseUser := apiDT.User{
+    responseUser := apiDT.ResponseUser{
       ID: int(newUser.ID),
       Name: newUser.Name,
       ImgURL: newUser.ImgUrl.String,
@@ -90,7 +90,7 @@ func (a *AuthHandler) Login() gin.HandlerFunc{
       return
     }
     ctx.Header("Authorization", token)
-    responseUser := apiDT.User{
+    responseUser := apiDT.ResponseUser{
       ID: int(dbUser.ID),
       Name: dbUser.Name,
       ImgURL: dbUser.ImgUrl.String,

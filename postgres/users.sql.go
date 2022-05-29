@@ -86,10 +86,11 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserAndBio = `-- name: GetUserAndBio :one
-SELECT u.id, u.name, u.img_url, b.bio 
+SELECT u.id, u.name, u.img_url, b.bio
 FROM users u
 LEFT JOIN bios b
 ON b.user_id = u.id
+WHERE u.id = $1
 `
 
 type GetUserAndBioRow struct {
@@ -99,8 +100,8 @@ type GetUserAndBioRow struct {
 	Bio    sql.NullString
 }
 
-func (q *Queries) GetUserAndBio(ctx context.Context) (GetUserAndBioRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserAndBio)
+func (q *Queries) GetUserAndBio(ctx context.Context, id int64) (GetUserAndBioRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserAndBio, id)
 	var i GetUserAndBioRow
 	err := row.Scan(
 		&i.ID,
@@ -128,6 +129,48 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 		&i.ImgUrl,
 	)
 	return i, err
+}
+
+const getUsersAndBio = `-- name: GetUsersAndBio :many
+SELECT u.id, u.name, u.img_url, b.bio 
+FROM users u
+LEFT JOIN bios b
+ON b.user_id = u.id
+`
+
+type GetUsersAndBioRow struct {
+	ID     int64
+	Name   string
+	ImgUrl sql.NullString
+	Bio    sql.NullString
+}
+
+func (q *Queries) GetUsersAndBio(ctx context.Context) ([]GetUsersAndBioRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersAndBio)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersAndBioRow
+	for rows.Next() {
+		var i GetUsersAndBioRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.ImgUrl,
+			&i.Bio,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateBio = `-- name: UpdateBio :one
