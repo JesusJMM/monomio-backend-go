@@ -30,7 +30,7 @@ FROM posts
 LEFT JOIN users ON users.id = posts.user_id
 WHERE posts.id = $1;
 
--- name: GetSinglePostByAuthor :one
+-- name: GetPostsByAuthor :one
 SELECT 
   posts.*,
   users.name AS authorName,

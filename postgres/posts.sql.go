@@ -181,6 +181,43 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 	return items, nil
 }
 
+const getPostsByAuthor = `-- name: GetPostsByAuthor :one
+SELECT 
+  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content,
+  users.name AS authorName,
+  users.img_url AS authorImgURL
+FROM posts
+LEFT JOIN users ON users.id = posts.user_id
+WHERE users.id = $1
+`
+
+type GetPostsByAuthorRow struct {
+	ID           int64
+	UserID       int64
+	CreateAt     time.Time
+	Title        string
+	Description  sql.NullString
+	Content      sql.NullString
+	Authorname   sql.NullString
+	Authorimgurl sql.NullString
+}
+
+func (q *Queries) GetPostsByAuthor(ctx context.Context, id int64) (GetPostsByAuthorRow, error) {
+	row := q.db.QueryRowContext(ctx, getPostsByAuthor, id)
+	var i GetPostsByAuthorRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreateAt,
+		&i.Title,
+		&i.Description,
+		&i.Content,
+		&i.Authorname,
+		&i.Authorimgurl,
+	)
+	return i, err
+}
+
 const getPostsByAuthorPaginated = `-- name: GetPostsByAuthorPaginated :many
 SELECT 
   posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content,
@@ -367,43 +404,6 @@ func (q *Queries) GetSinglePost(ctx context.Context, id int64) (Post, error) {
 		&i.Title,
 		&i.Description,
 		&i.Content,
-	)
-	return i, err
-}
-
-const getSinglePostByAuthor = `-- name: GetSinglePostByAuthor :one
-SELECT 
-  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content,
-  users.name AS authorName,
-  users.img_url AS authorImgURL
-FROM posts
-LEFT JOIN users ON users.id = posts.user_id
-WHERE users.id = $1
-`
-
-type GetSinglePostByAuthorRow struct {
-	ID           int64
-	UserID       int64
-	CreateAt     time.Time
-	Title        string
-	Description  sql.NullString
-	Content      sql.NullString
-	Authorname   sql.NullString
-	Authorimgurl sql.NullString
-}
-
-func (q *Queries) GetSinglePostByAuthor(ctx context.Context, id int64) (GetSinglePostByAuthorRow, error) {
-	row := q.db.QueryRowContext(ctx, getSinglePostByAuthor, id)
-	var i GetSinglePostByAuthorRow
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.CreateAt,
-		&i.Title,
-		&i.Description,
-		&i.Content,
-		&i.Authorname,
-		&i.Authorimgurl,
 	)
 	return i, err
 }
