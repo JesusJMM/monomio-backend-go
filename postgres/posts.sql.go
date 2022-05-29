@@ -188,7 +188,7 @@ SELECT
   users.img_url AS authorImgURL
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id
-WHERE users.id = $1
+WHERE users.name = $1
 `
 
 type GetPostsByAuthorRow struct {
@@ -202,8 +202,8 @@ type GetPostsByAuthorRow struct {
 	Authorimgurl sql.NullString
 }
 
-func (q *Queries) GetPostsByAuthor(ctx context.Context, id int64) (GetPostsByAuthorRow, error) {
-	row := q.db.QueryRowContext(ctx, getPostsByAuthor, id)
+func (q *Queries) GetPostsByAuthor(ctx context.Context, name string) (GetPostsByAuthorRow, error) {
+	row := q.db.QueryRowContext(ctx, getPostsByAuthor, name)
 	var i GetPostsByAuthorRow
 	err := row.Scan(
 		&i.ID,

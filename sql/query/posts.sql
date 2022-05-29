@@ -37,7 +37,7 @@ SELECT
   users.img_url AS authorImgURL
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id
-WHERE users.id = $1;
+WHERE users.name = $1;
 
 -- name: GetPostsByAuthorPaginated :many
 SELECT 
