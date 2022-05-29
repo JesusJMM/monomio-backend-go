@@ -200,7 +200,7 @@ func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
 
 func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
   return func(c *gin.Context) {
-    userName := c.Param("name")
+    userName := c.Param("user")
     var page int = 1
     if c.Query("page") != "" {
       var err error

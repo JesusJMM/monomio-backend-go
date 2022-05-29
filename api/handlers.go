@@ -24,6 +24,7 @@ func NewHandler(db postgres.Queries) *gin.Engine {
     api.GET("/posts", postH.GetAllPosts())
     api.GET("/post/:user/:title", postH.PostByUserAndTitle())
     api.GET("/posts/:id", postH.PostByID())
+    api.GET("/post/:user", postH.PostByUserPaginated())
 
     authorized.POST("/posts/", postH.Create())
     authorized.PUT("/posts/", postH.Update())
