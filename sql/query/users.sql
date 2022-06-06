@@ -46,9 +46,9 @@ FROM users u
 LEFT JOIN bios b
 ON b.user_id = u.id;
 
--- name: GetUserAndBio :one
+-- name: GetUserAndBioByName :one
 SELECT u.id, u.name, u.img_url, b.bio
 FROM users u
 LEFT JOIN bios b
 ON b.user_id = u.id
-WHERE u.id = $1;
+WHERE u.name = $1;

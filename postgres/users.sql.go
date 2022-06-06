@@ -85,24 +85,24 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 	return i, err
 }
 
-const getUserAndBio = `-- name: GetUserAndBio :one
+const getUserAndBioByName = `-- name: GetUserAndBioByName :one
 SELECT u.id, u.name, u.img_url, b.bio
 FROM users u
 LEFT JOIN bios b
 ON b.user_id = u.id
-WHERE u.id = $1
+WHERE u.name = $1
 `
 
-type GetUserAndBioRow struct {
+type GetUserAndBioByNameRow struct {
 	ID     int64
 	Name   string
 	ImgUrl sql.NullString
 	Bio    sql.NullString
 }
 
-func (q *Queries) GetUserAndBio(ctx context.Context, id int64) (GetUserAndBioRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserAndBio, id)
-	var i GetUserAndBioRow
+func (q *Queries) GetUserAndBioByName(ctx context.Context, name string) (GetUserAndBioByNameRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserAndBioByName, name)
+	var i GetUserAndBioByNameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,

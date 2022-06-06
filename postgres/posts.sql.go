@@ -148,7 +148,7 @@ func (q *Queries) GetPostWithAuthor(ctx context.Context, id int64) (GetPostWithA
 
 const getPosts = `-- name: GetPosts :many
 SELECT id, user_id, create_at, title, description, content FROM posts
-ORDER BY created_at
+ORDER BY create_at
 `
 
 func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
@@ -286,6 +286,7 @@ SELECT
   users.img_url AS authorImgURL
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id
+ORDER BY posts.create_at
 `
 
 type GetPostsWithAuthorRow struct {
@@ -338,6 +339,7 @@ SELECT
   users.img_url AS authorImgURL
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id
+ORDER BY posts.create_at DESC
 LIMIT $1
 OFFSET $2
 `

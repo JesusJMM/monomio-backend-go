@@ -62,7 +62,7 @@ LIMIT 1;
 
 -- name: GetPosts :many
 SELECT * FROM posts
-ORDER BY created_at;
+ORDER BY create_at;
 
 -- name: GetPostsWithAuthor :many
 SELECT 
@@ -70,7 +70,8 @@ SELECT
   users.name AS authorName,
   users.img_url AS authorImgURL
 FROM posts
-LEFT JOIN users ON users.id = posts.user_id;
+LEFT JOIN users ON users.id = posts.user_id
+ORDER BY posts.create_at;
 
 -- name: GetPostsWithAuthorPaginated :many
 SELECT 
@@ -79,6 +80,7 @@ SELECT
   users.img_url AS authorImgURL
 FROM posts
 LEFT JOIN users ON users.id = posts.user_id
+ORDER BY posts.create_at DESC
 LIMIT $1
 OFFSET $2;
 

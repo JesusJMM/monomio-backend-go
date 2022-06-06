@@ -43,7 +43,7 @@ func (h *UserHandler) GetAuthors() gin.HandlerFunc{
 func (h *UserHandler) GetAuthor() gin.HandlerFunc{
   return func(c *gin.Context) {
     name := c.Param("name")
-    user, err := h.db.GetUserByName(context.Background(), name)
+    user, err := h.db.GetUserAndBioByName(context.Background(), name)
     if err != nil {
       if errors.Is(err, sql.ErrNoRows) {
         c.String(http.StatusNotFound, "User not found")
@@ -53,10 +53,11 @@ func (h *UserHandler) GetAuthor() gin.HandlerFunc{
       log.Println(err)
       return
     }
-    out := apiDT.ResponseUser{
+    out := apiDT.ResponseUserAndBio{
       ID: int(user.ID),
       Name: user.Name,
       ImgURL: user.ImgUrl.String,
+      Bio: user.Bio.String,
     }
     c.JSON(http.StatusOK, out)
   }

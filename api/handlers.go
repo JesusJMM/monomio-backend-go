@@ -21,7 +21,8 @@ func NewHandler(db postgres.Queries) *gin.Engine {
 
   postH := posts.New(db)
   {
-    api.GET("/posts", postH.GetAllPosts())
+    api.GET("/posts", postH.PostsPaginated())
+    api.GET("/posts/all", postH.GetAllPosts())
     api.GET("/post/:user/:title", postH.PostByUserAndTitle())
     api.GET("/posts/:id", postH.PostByID())
     api.GET("/post/:user", postH.PostByUserPaginated())

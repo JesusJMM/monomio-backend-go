@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -142,16 +143,22 @@ func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 
 func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		page, err := strconv.Atoi(ctx.Query("id"))
-		if err != nil {
-			ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
-		}
+    page := 1
+    if ctx.Query("id") != "" {
+      var err error
+      page, err = strconv.Atoi(ctx.Query("id"))
+      if err != nil {
+        ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
+        return
+      }
+    }
 		posts, err := h.db.GetPostsWithAuthorPaginated(context.Background(), postgres.GetPostsWithAuthorPaginatedParams{
 			Limit:  10,
 			Offset: int32(10 * (page - 1)),
 		})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+      log.Println(err)
 			return
 		}
 		var out []apiDT.ResponseShortPost
