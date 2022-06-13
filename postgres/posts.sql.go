@@ -217,6 +217,29 @@ func (q *Queries) GetPostsPaginated(ctx context.Context, arg GetPostsPaginatedPa
 	return items, nil
 }
 
+const postByID = `-- name: PostByID :one
+SELECT posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at FROM posts WHERE posts.id = $1
+`
+
+func (q *Queries) PostByID(ctx context.Context, id int64) (Post, error) {
+	row := q.db.QueryRowContext(ctx, postByID, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreateAt,
+		&i.Title,
+		&i.Description,
+		&i.Content,
+		&i.FeedImg,
+		&i.ArticleImg,
+		&i.Slug,
+		&i.Published,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const postBySlugAndUser = `-- name: PostBySlugAndUser :one
 SELECT 
   posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at,
