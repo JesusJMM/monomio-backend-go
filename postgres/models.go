@@ -22,6 +22,11 @@ type Post struct {
 	Title       string
 	Description sql.NullString
 	Content     sql.NullString
+	FeedImg     sql.NullString
+	ArticleImg  sql.NullString
+	Slug        string
+	Published   sql.NullBool
+	UpdatedAt   time.Time
 }
 
 type User struct {
