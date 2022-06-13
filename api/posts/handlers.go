@@ -126,15 +126,16 @@ func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
-		var out []apiDT.ResponseShortPost
+		var out []apiDT.ResponseCompletePost
 		for _, p := range posts {
-			out = append(out, apiDT.ResponseShortPost{
+			out = append(out, apiDT.ResponseCompletePost{
 				ID:           int(p.ID),
 				Title:        p.Title,
 				Description:  p.Description.String,
 				CreatedAt:    p.CreateAt,
 				AuthorName:   p.Authorname.String,
 				AuthorImgURL: p.Authorimgurl.String,
+				Content:      p.Content.String,
 			})
 		}
 		ctx.JSON(http.StatusOK, out)
@@ -143,22 +144,22 @@ func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 
 func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-    page := 1
-    if ctx.Query("id") != "" {
-      var err error
-      page, err = strconv.Atoi(ctx.Query("id"))
-      if err != nil {
-        ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
-        return
-      }
-    }
+		page := 1
+		if ctx.Query("id") != "" {
+			var err error
+			page, err = strconv.Atoi(ctx.Query("id"))
+			if err != nil {
+				ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
+				return
+			}
+		}
 		posts, err := h.db.GetPostsWithAuthorPaginated(context.Background(), postgres.GetPostsWithAuthorPaginatedParams{
 			Limit:  10,
 			Offset: int32(10 * (page - 1)),
 		})
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
-      log.Println(err)
+			log.Println(err)
 			return
 		}
 		var out []apiDT.ResponseShortPost
@@ -206,30 +207,30 @@ func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
 }
 
 func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
-  return func(c *gin.Context) {
-    userName := c.Param("user")
-    var page int = 1
-    if c.Query("page") != "" {
-      var err error
-      page, err = strconv.Atoi(c.Query("page"))
-      if err != nil {
-        c.String(http.StatusBadRequest, "'page' query param must be a number")
-        return
-      }
-    }
-    posts, err := h.db.GetPostsByAuthorPaginated(context.Background(), postgres.GetPostsByAuthorPaginatedParams{
-      Name: userName,
-      Limit: 10,
-      Offset: int32(10 * (page - 1)),
-    })
-    if err != nil {
-      if errors.Is(err, sql.ErrNoRows) {
-        c.String(http.StatusNotFound, "Not found")
-        return
-      }
+	return func(c *gin.Context) {
+		userName := c.Param("user")
+		var page int = 1
+		if c.Query("page") != "" {
+			var err error
+			page, err = strconv.Atoi(c.Query("page"))
+			if err != nil {
+				c.String(http.StatusBadRequest, "'page' query param must be a number")
+				return
+			}
+		}
+		posts, err := h.db.GetPostsByAuthorPaginated(context.Background(), postgres.GetPostsByAuthorPaginatedParams{
+			Name:   userName,
+			Limit:  10,
+			Offset: int32(10 * (page - 1)),
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.String(http.StatusNotFound, "Not found")
+				return
+			}
 			c.String(http.StatusInternalServerError, "Internal Server Error")
-      return
-    }
+			return
+		}
 		var out []apiDT.ResponseShortPost
 		for _, p := range posts {
 			out = append(out, apiDT.ResponseShortPost{
@@ -241,27 +242,27 @@ func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
 				AuthorImgURL: p.Authorimgurl.String,
 			})
 		}
-    c.JSON(http.StatusOK, out)
-  }
+		c.JSON(http.StatusOK, out)
+	}
 }
 
 func (h *PostsHandler) PostByID() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-    id, err := strconv.Atoi(ctx.Param("id"))
-    if err != nil {
-      ctx.String(http.StatusBadRequest, "'id' url param must be a number")
-      return
-    }
-    post, err := h.db.GetPostWithAuthor(context.Background(), int64(id))
-    if err != nil {
-      if errors.Is(err, sql.ErrNoRows){
-        ctx.String(http.StatusNotFound, "Not found")
-        return
-      }
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.String(http.StatusBadRequest, "'id' url param must be a number")
+			return
+		}
+		post, err := h.db.GetPostWithAuthor(context.Background(), int64(id))
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				ctx.String(http.StatusNotFound, "Not found")
+				return
+			}
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
 			return
-    }
-    out := apiDT.ResponseCompletePost{
+		}
+		out := apiDT.ResponseCompletePost{
 			ID:           int(post.ID),
 			Title:        post.Title,
 			Description:  post.Description.String,
@@ -269,7 +270,7 @@ func (h *PostsHandler) PostByID() gin.HandlerFunc {
 			CreatedAt:    post.CreateAt,
 			AuthorName:   post.Authorname.String,
 			AuthorImgURL: post.Authorimgurl.String,
-    }
-    ctx.JSON(http.StatusOK, out)
+		}
+		ctx.JSON(http.StatusOK, out)
 	}
 }
