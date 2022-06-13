@@ -71,3 +71,6 @@ ON posts.user_id = users.id
 WHERE posts.slug = $1 AND users.id = $2
 ORDER BY posts.create_at DESC
 LIMIT 1;
+
+-- name: PostByID :one
+SELECT posts.* FROM posts WHERE posts.id = $1;
