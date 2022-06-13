@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	apiDT "github.com/JesusJMM/monomio/api/apiDataTypes"
+	"github.com/JesusJMM/monomio/api/apiutils"
 	"github.com/JesusJMM/monomio/api/auth"
 	"github.com/JesusJMM/monomio/postgres"
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,8 @@ func (h PostsHandler) Create() gin.HandlerFunc {
 			Description: sql.NullString{String: payload.Description, Valid: true},
 			Content:     sql.NullString{String: payload.Content, Valid: true},
 			UserID:      int64(tokenClaims.UID),
+			FeedImg:     sql.NullString{String: payload.FeedImg, Valid: payload.FeedImg != ""},
+			ArticleImg:  sql.NullString{String: payload.ArticleImg, Valid: payload.ArticleImg != ""},
 		}
 		newUser, err := h.db.CreatePost(context.Background(), postInput)
 		if err != nil {
@@ -60,28 +63,12 @@ func (h PostsHandler) Update() gin.HandlerFunc {
 		}
 
 		// verify if post exist and if the user is the author of the post
-		dbPost, err := h.db.GetSinglePost(context.Background(), int64(payload.ID))
+		dbPost, err := h.db.PostByID(context.Background(), int64(payload.ID))
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				if payload.Title == "" || payload.Content == "" || payload.Description == "" {
-					ctx.String(http.StatusBadRequest, "Resource don't exist, not enought data")
-					return
-				}
-
-				newUser, err := h.db.CreatePost(context.Background(), postgres.CreatePostParams{
-					Title:       payload.Title,
-					Description: sql.NullString{String: payload.Description, Valid: true},
-					Content:     sql.NullString{String: payload.Content, Valid: true},
-				})
-				if err != nil {
-					ctx.String(http.StatusInternalServerError, "Error creating resource : %w", err)
-					return
-				}
-				ctx.JSON(http.StatusCreated, apiDT.ResponseCreatePost{ID: int(newUser.ID)})
+				ctx.String(http.StatusBadRequest, "Resource do not exist")
 				return
 			}
-			ctx.String(http.StatusInternalServerError, "Error updating resource : %w", err)
-			return
 		}
 
 		if dbPost.UserID != int64(tokenClaims.UID) {
@@ -94,6 +81,8 @@ func (h PostsHandler) Update() gin.HandlerFunc {
 			Description: sql.NullString{String: payload.Description, Valid: true},
 			Content:     sql.NullString{String: payload.Content, Valid: true},
 			ID:          int64(payload.ID),
+			FeedImg:     sql.NullString{String: payload.FeedImg, Valid: payload.FeedImg != ""},
+			ArticleImg:  sql.NullString{String: payload.ArticleImg, Valid: payload.ArticleImg != ""},
 		}
 
 		newUser, err := h.db.UpdatePost(context.Background(), postInput)
@@ -121,7 +110,7 @@ func (h *PostsHandler) Delete() gin.HandlerFunc {
 
 func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		posts, err := h.db.GetPostsWithAuthor(context.Background())
+		posts, err := h.db.GetAllPosts(context.Background())
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, "Internal Server Error")
 			return
@@ -133,9 +122,14 @@ func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 				Title:        p.Title,
 				Description:  p.Description.String,
 				CreatedAt:    p.CreateAt,
-				AuthorName:   p.Authorname.String,
-				AuthorImgURL: p.Authorimgurl.String,
+				AuthorName:   p.UserName.String,
+				AuthorImgURL: p.UserImgUrl.String,
 				Content:      p.Content.String,
+				Slug:         p.Slug,
+				ArticleImg:   p.ArticleImg.String,
+				FeedImg:      p.FeedImg.String,
+				UpdatedAt:    p.UpdatedAt,
+				Published:    p.Published.Bool,
 			})
 		}
 		ctx.JSON(http.StatusOK, out)
@@ -143,22 +137,17 @@ func (h *PostsHandler) GetAllPosts() gin.HandlerFunc {
 }
 
 func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		page := 1
-		if ctx.Query("id") != "" {
-			var err error
-			page, err = strconv.Atoi(ctx.Query("id"))
-			if err != nil {
-				ctx.String(http.StatusBadRequest, "'id' url query param must be a number")
-				return
-			}
+	return func(c *gin.Context) {
+		page, ok := apiutils.GetIntQueryParam(c, "page", 1)
+		if !ok {
+			return
 		}
-		posts, err := h.db.GetPostsWithAuthorPaginated(context.Background(), postgres.GetPostsWithAuthorPaginatedParams{
+		posts, err := h.db.PostsPag(context.Background(), postgres.PostsPagParams{
 			Limit:  10,
 			Offset: int32(10 * (page - 1)),
 		})
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			c.String(http.StatusInternalServerError, "Internal Server Error")
 			log.Println(err)
 			return
 		}
@@ -169,21 +158,23 @@ func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
 				Title:        p.Title,
 				Description:  p.Description.String,
 				CreatedAt:    p.CreateAt,
-				AuthorName:   p.Authorname.String,
-				AuthorImgURL: p.Authorimgurl.String,
+				Slug:         p.Slug,
+				FeedImg:      p.FeedImg.String,
+				AuthorName:   p.UserName.String,
+				AuthorImgURL: p.UserImgUrl.String,
 			})
 		}
-		ctx.JSON(http.StatusOK, out)
+		c.JSON(http.StatusOK, out)
 	}
 }
 
-func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
+func (h *PostsHandler) PostByUserAndSlug() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userName := ctx.Param("user")
-		postTitle := ctx.Param("title")
-		post, err := h.db.GetPostByAuthorAndTitle(context.Background(), postgres.GetPostByAuthorAndTitleParams{
-			Name:  userName,
-			Title: postTitle,
+		postSlug := ctx.Param("slug")
+		p, err := h.db.PostBySlugAndUser(context.Background(), postgres.PostBySlugAndUserParams{
+			Slug: postSlug,
+			Name: userName,
 		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -194,13 +185,18 @@ func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
 			return
 		}
 		out := apiDT.ResponseCompletePost{
-			ID:           int(post.ID),
-			Title:        post.Title,
-			Description:  post.Description.String,
-			Content:      post.Content.String,
-			CreatedAt:    post.CreateAt,
-			AuthorName:   post.Authorname.String,
-			AuthorImgURL: post.Authorimgurl.String,
+			ID:           int(p.ID),
+			Title:        p.Title,
+			Description:  p.Description.String,
+			CreatedAt:    p.CreateAt,
+			AuthorName:   p.UserName.String,
+			AuthorImgURL: p.UserImgUrl.String,
+			Content:      p.Content.String,
+			Slug:         p.Slug,
+			ArticleImg:   p.ArticleImg.String,
+			FeedImg:      p.FeedImg.String,
+			UpdatedAt:    p.UpdatedAt,
+			Published:    p.Published.Bool,
 		}
 		ctx.JSON(http.StatusOK, out)
 	}
@@ -209,16 +205,11 @@ func (h *PostsHandler) PostByUserAndTitle() gin.HandlerFunc {
 func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userName := c.Param("user")
-		var page int = 1
-		if c.Query("page") != "" {
-			var err error
-			page, err = strconv.Atoi(c.Query("page"))
-			if err != nil {
-				c.String(http.StatusBadRequest, "'page' query param must be a number")
-				return
-			}
+		page, ok := apiutils.GetIntQueryParam(c, "page", 1)
+		if !ok {
+			return
 		}
-		posts, err := h.db.GetPostsByAuthorPaginated(context.Background(), postgres.GetPostsByAuthorPaginatedParams{
+		posts, err := h.db.PostsPagByUser(context.Background(), postgres.PostsPagByUserParams{
 			Name:   userName,
 			Limit:  10,
 			Offset: int32(10 * (page - 1)),
@@ -238,39 +229,49 @@ func (h *PostsHandler) PostByUserPaginated() gin.HandlerFunc {
 				Title:        p.Title,
 				Description:  p.Description.String,
 				CreatedAt:    p.CreateAt,
-				AuthorName:   p.Authorname.String,
-				AuthorImgURL: p.Authorimgurl.String,
+				Slug:         p.Slug,
+				FeedImg:      p.FeedImg.String,
+				AuthorName:   p.UserName.String,
+				AuthorImgURL: p.UserImgUrl.String,
 			})
 		}
 		c.JSON(http.StatusOK, out)
 	}
 }
 
-func (h *PostsHandler) PostByID() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		id, err := strconv.Atoi(ctx.Param("id"))
-		if err != nil {
-			ctx.String(http.StatusBadRequest, "'id' url param must be a number")
+func (h *PostsHandler) PostByUserPaginatedPrivate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+    tokenClaims, _ := auth.GetTokenClaimsFromContext(c)
+		page, ok := apiutils.GetIntQueryParam(c, "page", 1)
+		if !ok {
 			return
 		}
-		post, err := h.db.GetPostWithAuthor(context.Background(), int64(id))
+		posts, err := h.db.PostsPagByUserPrivate(context.Background(), postgres.PostsPagByUserPrivateParams{
+			ID:   int64(tokenClaims.UID),
+			Limit:  10,
+			Offset: int32(10 * (page - 1)),
+		})
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				ctx.String(http.StatusNotFound, "Not found")
+				c.String(http.StatusNotFound, "Not found")
 				return
 			}
-			ctx.String(http.StatusInternalServerError, "Internal Server Error")
+			c.String(http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
-		out := apiDT.ResponseCompletePost{
-			ID:           int(post.ID),
-			Title:        post.Title,
-			Description:  post.Description.String,
-			Content:      post.Content.String,
-			CreatedAt:    post.CreateAt,
-			AuthorName:   post.Authorname.String,
-			AuthorImgURL: post.Authorimgurl.String,
+		var out []apiDT.ResponseShortPost
+		for _, p := range posts {
+			out = append(out, apiDT.ResponseShortPost{
+				ID:           int(p.ID),
+				Title:        p.Title,
+				Description:  p.Description.String,
+				CreatedAt:    p.CreateAt,
+				Slug:         p.Slug,
+				FeedImg:      p.FeedImg.String,
+				AuthorName:   p.UserName.String,
+				AuthorImgURL: p.UserImgUrl.String,
+			})
 		}
-		ctx.JSON(http.StatusOK, out)
+		c.JSON(http.StatusOK, out)
 	}
 }

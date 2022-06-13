@@ -42,7 +42,7 @@ FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id;
 
--- name: GetPostsPaginated :many
+-- name: PostsPag :many
 SELECT 
   posts.*, 
   users.name user_name,
@@ -50,9 +50,36 @@ SELECT
 FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id
+WHERE posts.published = true
 ORDER BY posts.create_at DESC
 LIMIT $1
 OFFSET $2;
+
+-- name: PostsPagByUser :many
+SELECT 
+  posts.*, 
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE posts.published = true AND users.name = $1
+ORDER BY posts.create_at DESC
+LIMIT $2
+OFFSET $3;
+
+-- name: PostsPagByUserPrivate :many
+SELECT 
+  posts.*, 
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE users.id = $1
+ORDER BY posts.create_at DESC
+LIMIT $2
+OFFSET $3;
 
 -- name: PublishPost :exec
 UPDATE posts SET published = TRUE WHERE posts.id = $1;
@@ -68,7 +95,7 @@ SELECT
 FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id
-WHERE posts.slug = $1 AND users.id = $2
+WHERE posts.slug = $1 AND users.name = $2
 ORDER BY posts.create_at DESC
 LIMIT 1;
 

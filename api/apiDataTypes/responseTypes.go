@@ -27,6 +27,8 @@ type ResponseShortPost struct {
 	Title        string    `json:"title"`
 	Description  string    `json:"desc"`
 	CreatedAt    time.Time `json:"createdAt"`
+	Slug         string    `json:"slug"`
+	FeedImg      string    `json:"feedImg"`
 	AuthorName   string    `json:"authorName"`
 	AuthorImgURL string    `json:"authorImg"`
 }
@@ -37,6 +39,11 @@ type ResponseCompletePost struct {
 	Content      string    `json:"content"`
 	Description  string    `json:"desc"`
 	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time    `json:"updatedAt"`
+	Published    bool      `json:"published"`
+	Slug         string    `json:"slug"`
+	FeedImg      string    `json:"feedImg"`
+	ArticleImg   string    `json:"articleImg"`
 	AuthorName   string    `json:"authorName"`
 	AuthorImgURL string    `json:"authorImg"`
 }

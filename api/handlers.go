@@ -1,36 +1,33 @@
 package api
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"github.com/JesusJMM/monomio/api/auth"
 	"github.com/JesusJMM/monomio/api/posts"
 	"github.com/JesusJMM/monomio/api/users"
 	"github.com/JesusJMM/monomio/postgres"
-	"github.com/gin-gonic/gin"
 )
 
 func NewHandler(db postgres.Queries) *gin.Engine {
   r := gin.Default()
 
   api := r.Group("/api")
-  authorized := api.Group("")
-  authorized.Use(auth.AuthRequired)
 
   authH := auth.AuthHandler{DB: db}
   api.POST("/auth/signup", authH.Signup())
   api.POST("/auth/login", authH.Login())
 
   postH := posts.New(db)
-  {
-    api.GET("/posts/feed", postH.PostsPaginated())
-    api.GET("/posts/all", postH.GetAllPosts())
-    api.GET("/post/:user/:title", postH.PostByUserAndTitle())
-    api.GET("/posts/:id", postH.PostByID())
-    api.GET("/post/:user", postH.PostByUserPaginated())
+  api.GET("/posts/feed", postH.PostsPaginated())
+  api.GET("/posts/all", postH.GetAllPosts())
+  api.GET("/post/:user/:slug", postH.PostByUserAndSlug())
+  api.GET("/post/:user", postH.PostByUserPaginated())
+  api.GET("/post/dashboard", auth.AuthRequired, postH.PostByUserPaginatedPrivate())
+  api.POST("/post", auth.AuthRequired, postH.Create())
+  api.PUT("/post", auth.AuthRequired, postH.Update())
+  api.DELETE("/post", auth.AuthRequired, postH.Delete())
 
-    authorized.POST("/post", postH.Create())
-    authorized.PUT("/post", postH.Update())
-    authorized.DELETE("/post/:id", postH.Delete())
-  }
   userH := users.New(db)
   {
     api.GET("/authors", userH.GetAuthors())

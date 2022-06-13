@@ -146,77 +146,6 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]GetAllPostsRow, error) {
 	return items, nil
 }
 
-const getPostsPaginated = `-- name: GetPostsPaginated :many
-SELECT 
-  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at, 
-  users.name user_name,
-  users.img_url user_img_url
-FROM posts
-LEFT JOIN users 
-ON posts.user_id = users.id
-ORDER BY posts.create_at DESC
-LIMIT $1
-OFFSET $2
-`
-
-type GetPostsPaginatedParams struct {
-	Limit  int32
-	Offset int32
-}
-
-type GetPostsPaginatedRow struct {
-	ID          int64
-	UserID      int64
-	CreateAt    time.Time
-	Title       string
-	Description sql.NullString
-	Content     sql.NullString
-	FeedImg     sql.NullString
-	ArticleImg  sql.NullString
-	Slug        string
-	Published   sql.NullBool
-	UpdatedAt   time.Time
-	UserName    sql.NullString
-	UserImgUrl  sql.NullString
-}
-
-func (q *Queries) GetPostsPaginated(ctx context.Context, arg GetPostsPaginatedParams) ([]GetPostsPaginatedRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsPaginated, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetPostsPaginatedRow
-	for rows.Next() {
-		var i GetPostsPaginatedRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.CreateAt,
-			&i.Title,
-			&i.Description,
-			&i.Content,
-			&i.FeedImg,
-			&i.ArticleImg,
-			&i.Slug,
-			&i.Published,
-			&i.UpdatedAt,
-			&i.UserName,
-			&i.UserImgUrl,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const postByID = `-- name: PostByID :one
 SELECT posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at FROM posts WHERE posts.id = $1
 `
@@ -248,14 +177,14 @@ SELECT
 FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id
-WHERE posts.slug = $1 AND users.id = $2
+WHERE posts.slug = $1 AND users.name = $2
 ORDER BY posts.create_at DESC
 LIMIT 1
 `
 
 type PostBySlugAndUserParams struct {
 	Slug string
-	ID   int64
+	Name string
 }
 
 type PostBySlugAndUserRow struct {
@@ -275,7 +204,7 @@ type PostBySlugAndUserRow struct {
 }
 
 func (q *Queries) PostBySlugAndUser(ctx context.Context, arg PostBySlugAndUserParams) (PostBySlugAndUserRow, error) {
-	row := q.db.QueryRowContext(ctx, postBySlugAndUser, arg.Slug, arg.ID)
+	row := q.db.QueryRowContext(ctx, postBySlugAndUser, arg.Slug, arg.Name)
 	var i PostBySlugAndUserRow
 	err := row.Scan(
 		&i.ID,
@@ -293,6 +222,224 @@ func (q *Queries) PostBySlugAndUser(ctx context.Context, arg PostBySlugAndUserPa
 		&i.UserImgUrl,
 	)
 	return i, err
+}
+
+const postsPag = `-- name: PostsPag :many
+SELECT 
+  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at, 
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE posts.published = true
+ORDER BY posts.create_at DESC
+LIMIT $1
+OFFSET $2
+`
+
+type PostsPagParams struct {
+	Limit  int32
+	Offset int32
+}
+
+type PostsPagRow struct {
+	ID          int64
+	UserID      int64
+	CreateAt    time.Time
+	Title       string
+	Description sql.NullString
+	Content     sql.NullString
+	FeedImg     sql.NullString
+	ArticleImg  sql.NullString
+	Slug        string
+	Published   sql.NullBool
+	UpdatedAt   time.Time
+	UserName    sql.NullString
+	UserImgUrl  sql.NullString
+}
+
+func (q *Queries) PostsPag(ctx context.Context, arg PostsPagParams) ([]PostsPagRow, error) {
+	rows, err := q.db.QueryContext(ctx, postsPag, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PostsPagRow
+	for rows.Next() {
+		var i PostsPagRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CreateAt,
+			&i.Title,
+			&i.Description,
+			&i.Content,
+			&i.FeedImg,
+			&i.ArticleImg,
+			&i.Slug,
+			&i.Published,
+			&i.UpdatedAt,
+			&i.UserName,
+			&i.UserImgUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const postsPagByUser = `-- name: PostsPagByUser :many
+SELECT 
+  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at, 
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE posts.published = true AND users.name = $1
+ORDER BY posts.create_at DESC
+LIMIT $2
+OFFSET $3
+`
+
+type PostsPagByUserParams struct {
+	Name   string
+	Limit  int32
+	Offset int32
+}
+
+type PostsPagByUserRow struct {
+	ID          int64
+	UserID      int64
+	CreateAt    time.Time
+	Title       string
+	Description sql.NullString
+	Content     sql.NullString
+	FeedImg     sql.NullString
+	ArticleImg  sql.NullString
+	Slug        string
+	Published   sql.NullBool
+	UpdatedAt   time.Time
+	UserName    sql.NullString
+	UserImgUrl  sql.NullString
+}
+
+func (q *Queries) PostsPagByUser(ctx context.Context, arg PostsPagByUserParams) ([]PostsPagByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, postsPagByUser, arg.Name, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PostsPagByUserRow
+	for rows.Next() {
+		var i PostsPagByUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CreateAt,
+			&i.Title,
+			&i.Description,
+			&i.Content,
+			&i.FeedImg,
+			&i.ArticleImg,
+			&i.Slug,
+			&i.Published,
+			&i.UpdatedAt,
+			&i.UserName,
+			&i.UserImgUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const postsPagByUserPrivate = `-- name: PostsPagByUserPrivate :many
+SELECT 
+  posts.id, posts.user_id, posts.create_at, posts.title, posts.description, posts.content, posts.feed_img, posts.article_img, posts.slug, posts.published, posts.updated_at, 
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE users.id = $1
+ORDER BY posts.create_at DESC
+LIMIT $2
+OFFSET $3
+`
+
+type PostsPagByUserPrivateParams struct {
+	ID     int64
+	Limit  int32
+	Offset int32
+}
+
+type PostsPagByUserPrivateRow struct {
+	ID          int64
+	UserID      int64
+	CreateAt    time.Time
+	Title       string
+	Description sql.NullString
+	Content     sql.NullString
+	FeedImg     sql.NullString
+	ArticleImg  sql.NullString
+	Slug        string
+	Published   sql.NullBool
+	UpdatedAt   time.Time
+	UserName    sql.NullString
+	UserImgUrl  sql.NullString
+}
+
+func (q *Queries) PostsPagByUserPrivate(ctx context.Context, arg PostsPagByUserPrivateParams) ([]PostsPagByUserPrivateRow, error) {
+	rows, err := q.db.QueryContext(ctx, postsPagByUserPrivate, arg.ID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PostsPagByUserPrivateRow
+	for rows.Next() {
+		var i PostsPagByUserPrivateRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CreateAt,
+			&i.Title,
+			&i.Description,
+			&i.Content,
+			&i.FeedImg,
+			&i.ArticleImg,
+			&i.Slug,
+			&i.Published,
+			&i.UpdatedAt,
+			&i.UserName,
+			&i.UserImgUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const publishPost = `-- name: PublishPost :exec
