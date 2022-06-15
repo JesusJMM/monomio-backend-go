@@ -19,14 +19,14 @@ func NewHandler(db postgres.Queries) *gin.Engine {
   api.POST("/auth/login", authH.Login())
 
   postH := posts.New(db)
-  api.GET("/posts/feed", postH.PostsPaginated())
-  api.GET("/posts/all", postH.GetAllPosts())
-  api.GET("/post/:user/:slug", postH.PostByUserAndSlug())
-  api.GET("/post/:user", postH.PostByUserPaginated())
-  api.GET("/post/dashboard", auth.AuthRequired, postH.PostByUserPaginatedPrivate())
-  api.POST("/post", auth.AuthRequired, postH.Create())
-  api.PUT("/post", auth.AuthRequired, postH.Update())
-  api.DELETE("/post", auth.AuthRequired, postH.Delete())
+  api.GET("/posts/feed",        postH.PostsPaginated())
+  api.GET("/posts/all",         postH.GetAllPosts())
+  api.GET("/post/:user/:slug",  postH.PostByUserAndSlug())
+  api.GET("/post/:user",        postH.PostByUserPaginated())
+  api.GET("/posts/dashboard", auth.AuthRequired,  postH.PostByUserPaginatedPrivate())
+  api.POST("/post",   auth.AuthRequired,          postH.Create())
+  api.PUT("/post",    auth.AuthRequired,          postH.Update())
+  api.DELETE("/post", auth.AuthRequired,          postH.Delete())
 
   userH := users.New(db)
   {

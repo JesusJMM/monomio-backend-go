@@ -40,7 +40,8 @@ SELECT
   users.img_url user_img_url
 FROM posts
 LEFT JOIN users 
-ON posts.user_id = users.id;
+ON posts.user_id = users.id
+WHERE posts.published = true;
 
 -- name: PostsPag :many
 SELECT 
@@ -76,7 +77,7 @@ SELECT
 FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id
-WHERE users.id = $1
+WHERE posts.user_id = $1
 ORDER BY posts.create_at DESC
 LIMIT $2
 OFFSET $3;
@@ -96,6 +97,18 @@ FROM posts
 LEFT JOIN users 
 ON posts.user_id = users.id
 WHERE posts.slug = $1 AND users.name = $2
+ORDER BY posts.create_at DESC
+LIMIT 1;
+
+-- name: PostBySlugAndUserID :one
+SELECT 
+  posts.*,
+  users.name user_name,
+  users.img_url user_img_url
+FROM posts
+LEFT JOIN users 
+ON posts.user_id = users.id
+WHERE posts.slug = $1 AND users.ID = $2
 ORDER BY posts.create_at DESC
 LIMIT 1;
 
