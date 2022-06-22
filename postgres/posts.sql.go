@@ -499,20 +499,30 @@ func (q *Queries) PostsPagByUserPrivate(ctx context.Context, arg PostsPagByUserP
 }
 
 const publishPost = `-- name: PublishPost :exec
-UPDATE posts SET published = TRUE WHERE posts.id = $1
+UPDATE posts SET published = TRUE WHERE posts.id = $1 AND posts.user_id = $2
 `
 
-func (q *Queries) PublishPost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, publishPost, id)
+type PublishPostParams struct {
+	ID     int64
+	UserID int64
+}
+
+func (q *Queries) PublishPost(ctx context.Context, arg PublishPostParams) error {
+	_, err := q.db.ExecContext(ctx, publishPost, arg.ID, arg.UserID)
 	return err
 }
 
-const unPublishPost = `-- name: UnPublishPost :exec
-UPDATE posts SET published = FALSE WHERE posts.id = $1
+const unpublishPost = `-- name: UnpublishPost :exec
+UPDATE posts SET published = FALSE WHERE posts.id = $1 AND posts.user_id = $2
 `
 
-func (q *Queries) UnPublishPost(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, unPublishPost, id)
+type UnpublishPostParams struct {
+	ID     int64
+	UserID int64
+}
+
+func (q *Queries) UnpublishPost(ctx context.Context, arg UnpublishPostParams) error {
+	_, err := q.db.ExecContext(ctx, unpublishPost, arg.ID, arg.UserID)
 	return err
 }
 

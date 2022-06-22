@@ -16,6 +16,7 @@ func GetIntQueryParam(c *gin.Context, param string, def int) (int, bool) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("%s query param must be a number", param))
 			return p, false
 		}
+		return p, true
 	}
 	return def, true
 }

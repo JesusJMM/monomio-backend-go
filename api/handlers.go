@@ -27,6 +27,8 @@ func NewHandler(db postgres.Queries) *gin.Engine {
   api.POST("/post",   auth.AuthRequired,          postH.Create())
   api.PUT("/post",    auth.AuthRequired,          postH.Update())
   api.DELETE("/post", auth.AuthRequired,          postH.Delete())
+  api.POST("/posts/publish/:id", auth.AuthRequired, postH.Publish())
+  api.POST("/posts/unpublish/:id", auth.AuthRequired, postH.Unpublish())
 
   userH := users.New(db)
   {

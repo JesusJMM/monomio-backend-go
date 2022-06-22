@@ -88,7 +88,6 @@ func (h PostsHandler) Update() gin.HandlerFunc {
 			return
 		}
 
-    fmt.Println(payload.Content == "")
 		postInput := postgres.UpdatePostParams{
 			Title:       InvTernaryfunc(payload.Title, "", dbPost.Title),
 			Description: sql.NullString{String: InvTernaryfunc(payload.Description, "", dbPost.Description.String), Valid: true},
@@ -130,4 +129,38 @@ func InvTernaryfunc[T comparable](a, value, def T) T {
 		return def
 	}
 	return a
+}
+
+func (h *PostsHandler) Publish() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenClaims, _ := auth.GetTokenClaimsFromContext(c)
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.String(http.StatusBadRequest, "'id' url param must be a number")
+		}
+		if err := h.db.PublishPost(context.Background(), postgres.PublishPostParams{
+			ID:     int64(id),
+			UserID: int64(tokenClaims.UID),
+		}); err != nil {
+      c.String(http.StatusInternalServerError, "err : %w", err)
+		}
+		c.String(http.StatusOK, "Publish")
+	}
+}
+
+func (h *PostsHandler) Unpublish() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenClaims, _ := auth.GetTokenClaimsFromContext(c)
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			c.String(http.StatusBadRequest, "'id' url param must be a number")
+		}
+		if err := h.db.PublishPost(context.Background(), postgres.PublishPostParams{
+			ID:     int64(id),
+			UserID: int64(tokenClaims.UID),
+		}); err != nil {
+      c.String(http.StatusInternalServerError, "err : %w", err)
+		}
+		c.String(http.StatusOK, "Unpublish")
+	}
 }

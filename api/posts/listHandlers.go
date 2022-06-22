@@ -53,7 +53,7 @@ func (h *PostsHandler) PostsPaginated() gin.HandlerFunc {
 			Offset: int32(10 * (page - 1)),
 		})
 		if err != nil {
-			c.String(http.StatusInternalServerError, "Internal Server Error")
+      c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
 			log.Println(err)
 			return
 		}

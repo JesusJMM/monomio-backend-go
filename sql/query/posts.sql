@@ -85,8 +85,8 @@ OFFSET $3;
 -- name: PublishPost :exec
 UPDATE posts SET published = TRUE WHERE posts.id = $1;
 
--- name: UnPublishPost :exec
-UPDATE posts SET published = FALSE WHERE posts.id = $1;
+-- name: UnpublishPost :exec
+UPDATE posts SET published = FALSE WHERE posts.id = $1 AND posts.user_id = $2;
 
 -- name: PostBySlugAndUser :one
 SELECT 
